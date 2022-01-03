@@ -1,0 +1,161 @@
+<form method="POST" action="/courses/handle-form-action-trash" class="mt-4">
+    <div>
+        <h3>Khóa học đã xóa</h3>
+        <a href="/me/stored/courses">Danh sách khóa học</a>
+        <div class="d-flex">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" value="" id="checkbox-all">
+                <label class="form-check-label" for="checkbox-all">
+                    Chọn tất cả
+                </label>
+            </div>
+            <select class="form-select form-select-sm" name="action" style="width: 200px; margin: 0 16px;" required aria-label="Default select example">
+                <option value="">-- Chọn hành động --</option>
+                <option value="restore">Khôi phục</option>
+            </select>
+            
+            <button class="btn btn-primary btn-sm check-all-submit-btn disabled">Thực hiện</button>
+        </div>
+    </div>
+    <table class="table mt-4">
+        <thead>
+            <tr>
+                <th></th>
+                <th scope="col">#</th>
+                <th scope="col">Tên khóa học</th>
+                <th scope="col">Trình độ</th>
+                <th scope="col">Thời gian xóa</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {{#each courses}}
+            <tr>
+                <td>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="courseIds[]" value="{{this._id}}">
+                    </div>
+                </td>
+                <th scope="row">{{sum @index 1}}</th>
+                <td>{{this.name}}</td>
+                <td>{{this.level}}</td>
+                <td>{{this.deletedAt}}</td>
+                <td>
+                    <a class="btn btn-link btn-restore" data-id="{{this._id}}" href="">Khôi phục</a>
+                    <a class="btn btn-link" id="delete" data-bs-toggle="modal" data-id="{{this._id}}" data-bs-target="#delete-course-modal">Xóa vĩnh viễn</a>
+                </td>
+            </tr>
+            {{!-- Nếu ko có dữ liệu thì code sẽ lọt vào else --}}
+            {{else}}
+            <tr>
+                <td colspan="5" class="text-center">
+                    Thùng rác trống.
+                    <a href="/me/stored/courses">Danh sách khóa học</a>
+                </td>
+            </tr>
+            {{/each}}
+        </tbody>
+    </table>
+</form>
+
+
+<!-- Modal -->
+<div class="modal fade" id="delete-course-modal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Xóa vĩnh viễn khóa học?</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        Hành động này không thể khôi phục. Bạn vẫn muốn xóa khóa học này?
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="btn-delete-course" class="btn btn-danger">Xóa vĩnh viễn</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<form name="delete-course-form" method="POST"></form>
+<form name="restore-course-form" method="POST"></form>
+
+<script>
+    var deleteCourseModal = document.getElementById('delete-course-modal')
+    var courseId
+    var deleteForm = document.forms["delete-course-form"]
+    var restoreForm = document.forms["restore-course-form"]
+    var restoreBtns = document.querySelectorAll(".btn-restore")
+    var btnDeleteCourse = document.querySelector("#btn-delete-course")
+    var checkboxAll = document.querySelector("#checkbox-all")
+    var checkAllSubmitBtn = document.querySelector(".check-all-submit-btn")
+    var formCheckInputs = document.querySelectorAll("input[name='courseIds[]']")
+    
+
+    deleteCourseModal.addEventListener('show.bs.modal', function (event) {
+        // Button that triggered the modal
+        var button = event.relatedTarget
+        // Extract info from data-bs-* attributes
+        courseId = button.getAttribute('data-id')  
+    })
+
+    // When delete course btn clicked
+    btnDeleteCourse.onclick = () => {
+        deleteForm.action = "/courses/" + courseId + "/force?_method=DELETE"
+        deleteForm.submit()
+    }
+
+    // When store course btn clicked
+    restoreBtns.forEach(restoreBtn => {
+        restoreBtn.onclick = (e) => {
+            e.preventDefault()
+            courseId = e.target.dataset.id
+            restoreForm.action = "/courses/" + courseId + "/restore?_method=PATCH"
+            restoreForm.submit()
+        }
+    })
+
+
+    // When check box all clicked
+    checkboxAll.onchange = () => {
+        var isChecked = checkboxAll.checked
+        if(isChecked){
+            formCheckInputs.forEach(formCheckInput => {
+                formCheckInput.checked = isChecked
+            })
+        }else{
+            formCheckInputs.forEach(formCheckInput => {
+                formCheckInput.checked = isChecked
+            })
+        }
+        renderCheckAllSubmitBtn()
+    }
+
+    // When form check input clicked
+    formCheckInputs.forEach(formCheckInput => {
+        formCheckInput.onchange = () => {
+            var isCheckedAll = formCheckInputs.length === document.querySelectorAll("input[name='courseIds[]']:checked").length
+            if(isCheckedAll){
+                checkboxAll.checked = isCheckedAll
+            }else{
+                checkboxAll.checked = isCheckedAll
+            }
+            renderCheckAllSubmitBtn()
+        }
+    })
+    
+    // Render check all submit button
+    function renderCheckAllSubmitBtn(){
+        var checkedCount = document.querySelectorAll("input[name='courseIds[]']:checked").length
+        if(checkedCount){
+            checkAllSubmitBtn.classList.remove("disabled")
+        }else{
+            checkAllSubmitBtn.classList.add("disabled")
+        }
+    }
+
+
+</script>
